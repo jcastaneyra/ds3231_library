@@ -10,7 +10,11 @@
 #include <Wire.h>
 #include <avr/pgmspace.h>
 #include "DS3231.h"
-#include <WProgram.h>
+#if ARDUINO >= 100
+  #include "Arduino.h"
+#else
+  #include "WProgram.h"
+#endif
 
 #define SECONDS_PER_DAY 86400L
 
@@ -120,18 +124,18 @@ static uint8_t bin2bcd (uint8_t val) { return val + 6 * (val / 10); }
 uint8_t DS3231::readRegister(uint8_t regaddress)
 {
     Wire.beginTransmission(DS3231_ADDRESS);
-    Wire.send(regaddress);
+    Wire.write(regaddress);
     Wire.endTransmission();
 
     Wire.requestFrom(DS3231_ADDRESS, 1);
-    return Wire.receive();
+    return Wire.read();
 }
 
 void DS3231::writeRegister(uint8_t regaddress,uint8_t value)
 {
     Wire.beginTransmission(DS3231_ADDRESS);
-    Wire.send(regaddress);
-    Wire.send(value);
+    Wire.write(regaddress);
+    Wire.write(value);
     Wire.endTransmission();
 }
 
@@ -157,15 +161,15 @@ uint8_t DS3231::begin(void) {
 void DS3231::adjust(const DateTime& dt) {
 
   Wire.beginTransmission(DS3231_ADDRESS);
-  Wire.send(DS3231_SEC_REG);  //beginning from SEC Register address
+  Wire.write((byte)DS3231_SEC_REG);  //beginning from SEC Register address
 
-  Wire.send(bin2bcd(dt.second())); 
-  Wire.send(bin2bcd(dt.minute()));
-  Wire.send(bin2bcd((dt.hour()) & 0b10111111)); //Make sure clock is still 24 Hour
-  Wire.send(dt.dayOfWeek());
-  Wire.send(bin2bcd(dt.date()));
-  Wire.send(bin2bcd(dt.month()));
-  Wire.send(bin2bcd(dt.year() - 2000));  
+  Wire.write(bin2bcd(dt.second())); 
+  Wire.write(bin2bcd(dt.minute()));
+  Wire.write(bin2bcd((dt.hour()) & 0b10111111)); //Make sure clock is still 24 Hour
+  Wire.write(dt.dayOfWeek());
+  Wire.write(bin2bcd(dt.date()));
+  Wire.write(bin2bcd(dt.month()));
+  Wire.write(bin2bcd(dt.year() - 2000));  
   Wire.endTransmission();
 
 }
@@ -173,20 +177,20 @@ void DS3231::adjust(const DateTime& dt) {
 //Read the current time-date and return it in DateTime format
 DateTime DS3231::now() {
   Wire.beginTransmission(DS3231_ADDRESS);
-  Wire.send(0x00);	
+  Wire.write((byte)0x00);	
   Wire.endTransmission();
   
   Wire.requestFrom(DS3231_ADDRESS, 8);
-  uint8_t ss = bcd2bin(Wire.receive());
-  uint8_t mm = bcd2bin(Wire.receive());
+  uint8_t ss = bcd2bin(Wire.read());
+  uint8_t mm = bcd2bin(Wire.read());
    
-  uint8_t hrreg = Wire.receive();
+  uint8_t hrreg = Wire.read();
   uint8_t hh = bcd2bin((hrreg & ~0b11000000)); //Ignore 24 Hour bit
 
-  uint8_t wd =  Wire.receive();
-  uint8_t d = bcd2bin(Wire.receive());
-  uint8_t m = bcd2bin(Wire.receive());
-  uint16_t y = bcd2bin(Wire.receive()) + 2000;
+  uint8_t wd =  Wire.read();
+  uint8_t d = bcd2bin(Wire.read());
+  uint8_t m = bcd2bin(Wire.read());
+  uint16_t y = bcd2bin(Wire.read()) + 2000;
   
   return DateTime (y, m, d, hh, mm, ss, wd);
 }
