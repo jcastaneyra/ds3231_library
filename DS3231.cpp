@@ -59,6 +59,7 @@ DateTime::DateTime (long t) {
     t /= 60;
     hh = t % 24;
     uint16_t days = t / 24;
+    wday = ((days + 4) % 7);
     uint8_t leap;
     for (yOff = 0; ; ++yOff) {
         leap = yOff % 4 == 0;
